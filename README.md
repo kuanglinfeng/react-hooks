@@ -22,6 +22,8 @@ Hook种类：
 2. useEffect(解决函数组件中无法使用生命周期的问题)
 3. 其它...
 
+---
+
 ## State Hook
 
 ### State Hook使用
@@ -155,6 +157,194 @@ export default function App() {
   )
 }
 ```
+
+---
+
+## Effect Hook
+
+### Effect Hook使用
+
+Effect Hook: 用于在函数组件中处理副作用
+
+副作用：
+
+1. ajax请求
+2. 计时器
+3. 其它异步操作
+4. 更改真实DOM对象
+5. 本地存储
+6. 其它会对外部产生影响的操作
+
+函数useEffect，接收一个函数作为参数，接收的函数就是需要进行副作用操作的函数。
+
+```jsx
+import React, { useState, useEffect } from 'react'
+
+export default function App() {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    // 操作页面标题 有副作用
+    document.title = count
+  })
+
+  return (
+    <div>
+      <span>{count}</span>
+      <button onClick={() => { setCount(count + 1)}}>
+        +
+      </button>
+    </div>
+  )
+}
+```
+
+### 注意的细节
+
+1. 副作用函数的运行时间点，是在页面完成真实的UI渲染之后。因此它的执行是异步的，不会阻塞浏览器。
+   1. 与类组件中componentDidMount和componentDidUpdate的区别
+      1. componentDidMount和componentDidUpdate更改了真实DOM，但是用户还没有看到UI更新，同步的
+      2. useEffect中的副作用函数，更改了真实DOM，并且用户已经看到了UI更新，异步的
+2. 每个函数组件中，可以多次使用useEffect，但是不要放入判断、循环等代码块中
+3. **useEffect中副作用函数，可以有返回值，返回值必须是一个函数，该函数叫做清理函数**
+   1. **首次渲染组件不会运行**
+   2. **清理函数运行时间点，每次在运行副作用函数之前**
+   3. **组件被销毁时一定会运行**
+4. **useEffect函数，可以传递第二个参数**
+   1. 第二个参数是一个数组
+   2. 数组中记录该副作用的依赖数据
+   3. **当组件重新渲染后，只有依赖数组中的数据与上一次不一样时，才会执行副作用**
+   4. **所以，当传递了依赖数据之后，如果数据没有发生变化**
+      1. **副作用函数只在第一次页面渲染完成后运行**
+      2. **清理函数只在卸载组件后运行**
+5. useEffect函数，不传递第二个参数，则默认每次render后都会运行
+6. useEffect闭包
+7. 副作用函数在每次注册时，会覆盖掉之前的副作用函数，因此，尽量保证副作用函数稳定。否则控制起来会比较复杂
+
+useEffect的返回值是一个清理函数：
+
+```jsx
+import React, { useState, useEffect } from 'react'
+
+// 点击两次button 输出如下：
+// render
+// 我是副作用函数
+// render
+// 我是清理函数
+// 我是副作用函数
+// render
+// 我是清理函数
+// 我是副作用函数
+export default function App() {
+  const [count, setCount] = useState(0)
+  console.log('render')
+  useEffect(() => {
+    console.log('我是副作用函数')
+    // 操作页面标题 有副作用
+    document.title = count
+    return () => {
+      console.log('我是清理函数')
+    }
+  })
+
+  return (
+    <div>
+      <span>{count}</span>
+      <button onClick={() => { setCount(count + 1)}}>
+        +
+      </button>
+    </div>
+  )
+}
+```
+
+useEffect传递第二个参数（依赖数组为空时可以实现副作用函数只执行一次的效果）：
+
+```jsx
+import React, { useState, useEffect } from 'react'
+
+// 点击两次button 输出如下：
+// render
+// 我是副作用函数
+// render
+// render
+export default function App() {
+  const [count, setCount] = useState(0)
+  console.log('render')
+  useEffect(() => {
+    console.log('我是副作用函数')
+    // 操作页面标题 有副作用
+    document.title = count
+    return () => {
+      console.log('我是清理函数')
+    }
+  }, []) // 依赖数组为空 
+
+  return (
+    <div>
+      <span>{count}</span>
+      <button onClick={() => { setCount(count + 1)}}>
+        +
+      </button>
+    </div>
+  )
+}
+```
+
+useEffect形成闭包：
+
+```jsx
+import React, { useState, useEffect } from 'react'
+
+// 程序运行 快速点击button5下 输出如下：
+// 0
+// 1
+// 2
+// 3
+// 4
+// 5
+export default function App() {
+  // 使用一个状态，该状态的默认值是0
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    setTimeout(() => {
+      console.log(count)
+    }, 5000)
+  })
+
+  return (
+    <div>
+      <span>{count}</span>
+      <button onClick={() => setCount(count + 1)}>+</button>
+    </div>
+  )
+}
+```
+
+写一个倒计时组件：
+
+```jsx
+import React, { useState, useEffect } from 'react'
+
+// props接收一个beginTime属性
+function Countdown(props) {
+  const [count, setCount] = useState(props.beginTime)
+  useEffect(() => {
+    if (count === 0)  return
+    setTimeout(() => {
+      setCount(count - 1)
+    }, 1000)
+  }, [count])
+
+  return <span>{count}</span>
+}
+
+export default function App() {
+  return <Countdown beginTime={10}/>
+}
+```
+
+
 
 
 
